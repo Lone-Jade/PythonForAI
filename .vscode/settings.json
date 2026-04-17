@@ -1,0 +1,27 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:venv",
+    "black-formatter.args": [
+        "--line-length",
+        "88"
+    ],
+    "workbench.list.smoothScrolling": true,
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "editor.cursorBlinking": "smooth",
+    "editor.wordWrap": "on",
+    "editor.guides.bracketPairs": true,
+    "files.autoSave": "afterDelay",
+    "python-envs.defaultPackageManager": "ms-python.python:pip",
+    "editor.mouseWheelZoom": true,
+    // 必须开启总开关
+    "editor.inlayHints.enabled": "on",
+    // Pylance 专属的 Python 内联提示设置
+    "python.analysis.inlayHints.functionReturnTypes": false,
+    "python.analysis.inlayHints.variableTypes": false,
+    // 重点：在函数调用处显示参数名
+    "python.analysis.inlayHints.callArgumentNames": "all",
+    // 也可以设为 "partial"，仅当参数名与实际变量名不同时显示
+    "js/ts.suggent.paths": false,
+}
