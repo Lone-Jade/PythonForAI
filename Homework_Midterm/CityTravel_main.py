@@ -20,15 +20,16 @@ plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
 
 # 使用模拟退火算法解决旅行商问题
 class SimulatedAnnealingTSP:
-    def __init__(self, path="data.csv", origin="北京"):
+    def __init__(self, cities, coordinates, origin="北京"):
         """
         初始化模拟退火算法解决旅行商问题
         :param path: 城市坐标数据文件路径
         :param origin: 起始城市
         """
-        self.path = path  # 城市数据文件路径
+
         self.origin = origin  # 起始城市
-        self.cities, self.coordinates = self._load_data()  # 加载城市数据
+        self.cities = cities  # 加载城市数据
+        self.coordinates = coordinates  # 加载城市坐标
         self.num_cities = len(self.cities)  # 城市数量
         self.origin_index = self._get_index(origin) if origin else None  # 起始城市索引
         self.distances = self._cal_matrix_distance()  # 城市距离矩阵
@@ -38,21 +39,6 @@ class SimulatedAnnealingTSP:
         self.cooling_rate = 0.995  # 降温速率（每轮乘以该系数）
         self.num_iter = 200  # 每个温度下的迭代次数
         self.stop_temp = 1e-8  # 停止温度（低于此值终止）
-
-    def _load_data(self):
-        """
-        从CSV文件加载城市坐标数据，并计算城市之间的距离
-        :return: 城市列表和城市坐标
-        """
-        cities = []
-        coordinates = []
-        with open(self.path, "r", encoding="utf-8") as f:
-            next(f)  # 跳过第一行标题
-            reader = csv.reader(f)
-            for row in reader:
-                cities.append(row[0])  # 记录城市名称
-                coordinates.append((int(row[1]), int(row[2])))  # 记录城市坐标
-        return cities, coordinates
 
     def _cal_distance(self, i, j):
         """
@@ -166,8 +152,15 @@ class SimulatedAnnealingTSP:
         打印访问路径
         :param route: 访问路径
         """
-        route_names = [self.cities[i] for i in route]
-        print(" -> ".join(route_names) + f" -> {self.cities[route[0]]}")
+        for i in range(len(route)):
+            if i != len(route) - 1:
+                city_str = self.cities[route[i]] + " -> "
+            else:
+                city_str = self.cities[route[i]]
+            print(pad_string(city_str, 10), end="")
+            if (i + 1) % 10 == 0:
+                print()  # 每行打印10个城市，保持整齐
+        print()
 
 
 def get_display_width(s):
@@ -190,8 +183,23 @@ def pad_string(s, total_width):
 
 if __name__ == "__main__":
     start_time = time.time()  # 记录开始时间
+    # 导入csv文件，获取城市列表和坐标
+    csv_path = "./Homework_Midterm/data.csv"
+    cities = []
+    coordinates = []
+
+    with open(csv_path, "r", encoding="utf-8") as f:
+        next(f)  # 跳过表头
+        reader = csv.reader(f)
+        for row in reader:
+            city_name = row[0].strip()
+            x = int(row[1])
+            y = int(row[2])
+            cities.append(city_name)
+            coordinates.append((x, y))
+
     # 实例化模拟退火算法类
-    sa_tsp = SimulatedAnnealingTSP(path="./Homework_Midterm/data.csv", origin="北京")
+    sa_tsp = SimulatedAnnealingTSP(cities, coordinates, origin="北京")
     # 执行模拟退火算法，获取最短路径和对应距离
     best_route, best_dist = sa_tsp.simulated_annealing()
     # 打印最短路径和对应距离
