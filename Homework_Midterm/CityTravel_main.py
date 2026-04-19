@@ -74,8 +74,9 @@ class SimulatedAnnealingTSP:
         :return: float, 总距离
         """
         dist = 0
-        for i in range(len(route)):
-            dist += self.distances[route[i]][route[(i + 1) % len(route)]]
+        length = len(route)
+        for i in range(length):
+            dist += self.distances[route[i]][route[(i + 1) % length]]
         return dist
 
     def _random_route(self):
@@ -86,6 +87,21 @@ class SimulatedAnnealingTSP:
         other_cities = [i for i in range(self.num_cities) if i != self.origin_index]
         random.shuffle(other_cities)
         route = [self.origin_index] + other_cities
+        return route
+
+    def _greed_route(self):
+        """
+        生成贪婪算法的访问路径
+        :return: 访问路径，第一个元素是起始城市，其余为其余城市的顺序
+        """
+        unvisited = set(range(self.num_cities))
+        unvisited.remove(self.origin_index)
+        route = [self.origin_index]
+        while unvisited:
+            last = route[-1]
+            next_city = min(unvisited, key=lambda c: self.distances[last][c])
+            route.append(next_city)
+            unvisited.remove(next_city)
         return route
 
     def _get_index(self, city_name):
@@ -117,7 +133,8 @@ class SimulatedAnnealingTSP:
         :return: 最短路径和对应距离
         """
         # 1. 初始化当前解和最优解
-        current_route = self._random_route()  # 随机生成初始路径
+        # current_route = self._random_route()  # 随机生成初始路径，优化为贪婪算法生成初始路径，通常更接近最优解，能加速收敛
+        current_route = self._greed_route()  # 使用贪婪算法生成初始路径
         current_dist = self._total_distance(current_route)  # 计算初始路径距离
 
         best_route = current_route.copy()  # 最优路径
@@ -156,8 +173,9 @@ class SimulatedAnnealingTSP:
         打印访问路径
         :param route: 访问路径
         """
-        for i in range(len(route)):
-            if i != len(route) - 1:
+        length = len(route)
+        for i in range(length):
+            if i != length - 1:
                 city_str = self.cities[route[i]] + " -> "
             else:
                 city_str = self.cities[route[i]]
@@ -187,16 +205,18 @@ def pad_string(s, total_width):
 
 
 if __name__ == "__main__":
-    start_time = time.time()  # 记录开始时间
+    key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
+    # 设置随机数种子，确保结果可复现
+    random.seed(42) if key == "y" else None
+
     # 导入csv文件，获取城市列表和坐标
     csv_path = "./Homework_Midterm/data.csv"
     cities = []
     coordinates = []
 
-    key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
-    # 设置随机数种子，确保结果可复现
-    random.seed(42) if key == "y" else None
+    start_time = time.time()  # 记录开始时间
 
+    # 读取csv文件
     with open(csv_path, "r", encoding="utf-8") as f:
         next(f)  # 跳过表头
         reader = csv.reader(f)
