@@ -9,6 +9,7 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import time
 
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # Windows黑体
 plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
@@ -29,13 +30,13 @@ class SimulatedAnnealingTSP:
         self.origin = origin  # 起始城市
         self.cities, self.coordinates = self._load_data()  # 加载城市数据
         self.num_cities = len(self.cities)  # 城市数量
-        self.origin_index = self.get_index(origin) if origin else None  # 起始城市索引
+        self.origin_index = self._get_index(origin) if origin else None  # 起始城市索引
         self.distances = self._cal_matrix_distance()  # 城市距离矩阵
 
         # 模拟退火算法超参数
         self.initial_temp = 10000.0  # 初始温度
         self.cooling_rate = 0.995  # 降温速率（每轮乘以该系数）
-        self.iterations_per_temp = 200  # 每个温度下的迭代次数
+        self.num_iter = 200  # 每个温度下的迭代次数
         self.stop_temp = 1e-8  # 停止温度（低于此值终止）
 
     def _load_data(self):
@@ -50,7 +51,7 @@ class SimulatedAnnealingTSP:
             reader = csv.reader(f)
             for row in reader:
                 cities.append(row[0])  # 记录城市名称
-                coordinates.append(int(row[1]), int(row[2]))  # 记录城市坐标
+                coordinates.append((int(row[1]), int(row[2])))  # 记录城市坐标
         return cities, coordinates
 
     def _cal_distance(self, i, j):
@@ -97,7 +98,7 @@ class SimulatedAnnealingTSP:
         route = [self.origin_index] + other_cities
         return route
 
-    def _get_city_index(self, city_name):
+    def _get_index(self, city_name):
         """
         获取城市名称对应的索引
         :param city_name: 城市名称
@@ -119,7 +120,7 @@ class SimulatedAnnealingTSP:
         idx1, idx2 = random.sample(range(1, self.num_cities), 2)
         new_route[idx1], new_route[idx2] = new_route[idx2], new_route[idx1]
         return new_route
-    
+
     def simulated_annealing(self):
         """
         执行模拟退火算法，寻找最短访问路径
@@ -134,8 +135,8 @@ class SimulatedAnnealingTSP:
 
         temperature = self.initial_temp  # 初始温度
 
-        #2. 执行模拟退火算法
-        while(temperature>self.stop_temp):
+        # 2. 执行模拟退火算法
+        while temperature > self.stop_temp:
             for _ in range(self.num_iter):
                 # 生成新解
                 new_route = self._neighnour_route(current_route)
@@ -145,4 +146,67 @@ class SimulatedAnnealingTSP:
                 delta = new_dist - current_dist
 
                 # 判断是否接受新解
-                if delta < 0 or random.random() < math.exp(-delta / temperature): # 
+                if delta < 0 or random.random() < math.exp(
+                    -delta / temperature
+                ):  # Metropolis 准则
+                    current_route = new_route
+                    current_dist = new_dist
+                    # 更新最优解
+                    if current_dist < best_dist:
+                        best_route = current_route.copy()
+                        best_dist = current_dist
+
+            # 降温
+            temperature *= self.cooling_rate
+
+        return best_route, best_dist
+
+    def print_route(self, route):
+        """
+        打印访问路径
+        :param route: 访问路径
+        """
+        route_names = [self.cities[i] for i in route]
+        print(" -> ".join(route_names) + f" -> {self.cities[route[0]]}")
+
+
+def get_display_width(s):
+    """计算字符串的实际显示宽度（中文占2，英文占1）"""
+    width = 0
+    for char in s:
+        if ord(char) > 127:
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def pad_string(s, total_width):
+    """按显示宽度填充空格，用于对齐打印"""
+    current_width = get_display_width(s)
+    padding = total_width - current_width
+    return s + " " * padding
+
+
+if __name__ == "__main__":
+    start_time = time.time()  # 记录开始时间
+    # 实例化模拟退火算法类
+    sa_tsp = SimulatedAnnealingTSP(path="./Homework_Midterm/data.csv", origin="北京")
+    # 执行模拟退火算法，获取最短路径和对应距离
+    best_route, best_dist = sa_tsp.simulated_annealing()
+    # 打印最短路径和对应距离
+
+    # 测试基本信息
+    print(f"城市数量: {sa_tsp.num_cities}")
+    print("城市列表（每行10个）:")
+    for i, name in enumerate(sa_tsp.cities):
+        print(pad_string(name, 10), end="")
+        if (i + 1) % 10 == 0:
+            print()
+    print("\n" + "=" * 60)
+
+    print("最短访问路径:")
+    sa_tsp.print_route(best_route)
+
+    print(f"最短距离: {best_dist:.2f}")
+    print(f"运行时间: {time.time() - start_time:.2f}秒")
