@@ -143,7 +143,7 @@ if __name__ == "__main__":
     # 实例化 City 类
     city = City("./Homework_Midterm/data.csv")
 
-    # 测试
+        # 测试
     length = city.num_cities
     print(length)
     # 打印城市名
@@ -152,17 +152,17 @@ if __name__ == "__main__":
         if (i + 1) % 10 == 0:
             print()
     print()
-    # 打印坐标
-    # for i in range(length):
-    #     print(f"Start from {city.cities[i]}")
-    #     for j in range(length):
-    #         print(f"{city.distances[i][j]:.2f}", end=" ")
-    #         if (j + 1) % 10 == 0:
-    #             print()
+        # 打印坐标
+        # for i in range(length):
+        #     print(f"Start from {city.cities[i]}")
+        #     for j in range(length):
+        #         print(f"{city.distances[i][j]:.2f}", end=" ")
+        #         if (j + 1) % 10 == 0:
+        #             print()
 
-    #     print()
+        #     print()
 
-    # 打印结果
+        # 打印结果
     print("The shortest path is:")
     path_name, min_distance = city.get_shortest_path()
     city.print_path(path_name)
