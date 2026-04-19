@@ -166,3 +166,4 @@ if __name__ == "__main__":
     print("The shortest path is:")
     path_name, min_distance = city.get_shortest_path()
     city.print_path(path_name)
+    print(f"The total distance is {min_distance:.2f}")
