@@ -11,8 +11,10 @@ import numpy as np
 import random
 import time
 
+
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # Windows黑体
 plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
+
 # csv 文件中，第一列是城市名，第二列是X，第三列是Y，总共 34 个城市
 # 例如
 # 北京,9932,4439
@@ -32,7 +34,9 @@ class SimulatedAnnealingTSP:
         self.coordinates = coordinates  # 加载城市坐标
         self.num_cities = len(self.cities)  # 城市数量
         self.origin_index = self._get_index(origin) if origin else None  # 起始城市索引
-        self.distances = self._cal_matrix_distance()  # 城市距离矩阵
+        self.distances = np.array(
+            self._cal_matrix_distance()
+        )  # 城市距离矩阵，并转换为 NumPy 数组以加速计算
 
         # 模拟退火算法超参数
         self.initial_temp = 10000.0  # 初始温度
@@ -157,12 +161,13 @@ class SimulatedAnnealingTSP:
                 city_str = self.cities[route[i]] + " -> "
             else:
                 city_str = self.cities[route[i]]
-            print(pad_string(city_str, 10), end="")
+            print(pad_string(city_str, 12), end="")
             if (i + 1) % 10 == 0:
                 print()  # 每行打印10个城市，保持整齐
         print()
 
 
+# 辅助函数
 def get_display_width(s):
     """计算字符串的实际显示宽度（中文占2，英文占1）"""
     width = 0
@@ -188,6 +193,10 @@ if __name__ == "__main__":
     cities = []
     coordinates = []
 
+    key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
+    # 设置随机数种子，确保结果可复现
+    random.seed(42) if key == "y" else None
+
     with open(csv_path, "r", encoding="utf-8") as f:
         next(f)  # 跳过表头
         reader = csv.reader(f)
@@ -202,7 +211,6 @@ if __name__ == "__main__":
     sa_tsp = SimulatedAnnealingTSP(cities, coordinates, origin="北京")
     # 执行模拟退火算法，获取最短路径和对应距离
     best_route, best_dist = sa_tsp.simulated_annealing()
-    # 打印最短路径和对应距离
 
     # 测试基本信息
     print(f"城市数量: {sa_tsp.num_cities}")
@@ -213,8 +221,8 @@ if __name__ == "__main__":
             print()
     print("\n" + "=" * 60)
 
+    # 打印最短路径和对应距离
     print("最短访问路径:")
     sa_tsp.print_route(best_route)
-
     print(f"最短距离: {best_dist:.2f}")
     print(f"运行时间: {time.time() - start_time:.2f}秒")
