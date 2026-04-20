@@ -254,35 +254,42 @@
 # print(np.dot(x, one))
 # print(np.dot(one, x))
 
+# import math
+
+# sum_ = 0
+# for i in range(0, 4):
+#     sum_ += math.exp(-5) * 5**i / math.factorial(i)
+# print(sum_)
+
+# print(5 * math.exp(-5))
+# print(math.exp(-9) * 18)
+
+# x = 1 - math.exp(-3) * 4
+# x = x / (1 - math.exp(-3))
+# print(x)
+
+# y = math.exp(3) - 4
+# y = y / (math.exp(3) - 1)
+# print(y)
+
+# lambda_ = 220
+# # 初始化累积和
+# sum_ = 0.0
+# # 计算第0项概率：P(0) = e^(-λ)
+# p = math.exp(-lambda_)
+# sum_ += p
+
+# # 递推计算 1~220 项并累加
+# for i in range(1, 221):
+#     # 核心递推公式，无大数、无阶乘、无幂次
+#     p = p * lambda_ / i
+#     sum_ += p
+
+# print(sum_)
+
 import math
 
-sum_ = 0
-for i in range(0, 4):
-    sum_ += math.exp(-5) * 5**i / math.factorial(i)
-print(sum_)
-
-print(5 * math.exp(-5))
-print(math.exp(-9) * 18)
-
-x = 1 - math.exp(-3) * 4
-x = x / (1 - math.exp(-3))
-print(x)
-
-y = math.exp(3) - 4
-y = y / (math.exp(3) - 1)
-print(y)
-
-lambda_ = 220
-# 初始化累积和
-sum_ = 0.0
-# 计算第0项概率：P(0) = e^(-λ)
-p = math.exp(-lambda_)
-sum_ += p
-
-# 递推计算 1~220 项并累加
-for i in range(1, 221):
-    # 核心递推公式，无大数、无阶乘、无幂次
-    p = p * lambda_ / i
-    sum_ += p
-
-print(sum_)
+rho = (3 - math.sqrt(5)) / 2
+print(rho, 1 - rho)
+print((1 - rho) / rho, rho / (1 - rho))
+print((1-rho)**2, rho**2)
