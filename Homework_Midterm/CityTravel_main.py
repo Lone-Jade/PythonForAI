@@ -39,10 +39,10 @@ class SimulatedAnnealingTSP:
         )  # 城市距离矩阵，并转换为 NumPy 数组以加速计算
 
         # 模拟退火算法超参数
-        self.initial_temp = 10000.0  # 初始温度
-        self.cooling_rate = 0.995  # 降温速率（每轮乘以该系数）
-        self.num_iter = 200  # 每个温度下的迭代次数
-        self.stop_temp = 1e-8  # 停止温度（低于此值终止）
+        self.initial_temp = 5000.0  # 初始温度
+        self.cooling_rate = 0.997  # 降温速率（每轮乘以该系数）
+        self.num_iter = 100  # 每个温度下的迭代次数
+        self.stop_temp = 1e-10  # 停止温度（低于此值终止）
 
     def _cal_distance(self, i, j):
         """
@@ -115,7 +115,7 @@ class SimulatedAnnealingTSP:
         except:
             raise ValueError(f"{city_name}不在数据之中")
 
-    def _neighnour_route(self, route):
+    def _neighour_route(self, route):
         """
         产生当前路径的一个邻域解（随机交换两个非起始城市的位置）
         :param route: 当前路径
@@ -146,7 +146,7 @@ class SimulatedAnnealingTSP:
         while temperature > self.stop_temp:
             for _ in range(self.num_iter):
                 # 生成新解
-                new_route = self._neighnour_route(current_route)
+                new_route = self._neighour_route(current_route)
                 new_dist = self._total_distance(new_route)
 
                 # 计算距离差
@@ -165,6 +165,11 @@ class SimulatedAnnealingTSP:
 
             # 降温
             temperature *= self.cooling_rate
+            # 优化：自适应降温
+            # if best_dist < current_dist * 0.95:
+            #     temperature *= 0.998  # 找到更优解：慢降温
+            # else:
+            #     temperature *= 0.99  # 没找到：快降温
 
         return best_route, best_dist
 
@@ -175,14 +180,94 @@ class SimulatedAnnealingTSP:
         """
         length = len(route)
         for i in range(length):
-            if i != length - 1:
-                city_str = self.cities[route[i]] + " -> "
-            else:
-                city_str = self.cities[route[i]]
+            city_str = self.cities[route[i]] + " -> "
             print(pad_string(city_str, 12), end="")
             if (i + 1) % 10 == 0:
                 print()  # 每行打印10个城市，保持整齐
+        city_end_str = self.cities[route[0]]  # 最后返回起点
+        print(pad_string(city_end_str, 12))
         print()
+
+    def plot_route(self, route, best_dist):
+        """
+        可视化TSP最优路径：带城市名称、方向箭头、起点高亮
+        :param route: 最优路径索引列表
+        :param best_dist: 最短总距离
+        """
+        plt.figure(figsize=(12, 9), dpi=100)
+
+        # 获取所有城市坐标
+        x = [self.coordinates[i][0] for i in range(self.num_cities)]
+        y = [self.coordinates[i][1] for i in range(self.num_cities)]
+
+        # 绘制所有城市点（灰色）
+        plt.scatter(x, y, c="lightgray", s=60, alpha=0.7, label="所有城市")
+
+        # 绘制最优路径（蓝色带箭头）
+        route_x = [self.coordinates[i][0] for i in route]
+        route_y = [self.coordinates[i][1] for i in route]
+        # 闭合回路（回到起点）
+        route_x.append(route_x[0])
+        route_y.append(route_y[0])
+
+        # 画路径线
+        plt.plot(
+            route_x, route_y, c="#1f77b4", linewidth=2.5, alpha=0.8, label="访问路径"
+        )
+
+        # 绘制方向箭头（显示行走方向）
+        for i in range(len(route_x) - 1):
+            plt.arrow(
+                route_x[i],
+                route_y[i],  # 起点
+                route_x[i + 1] - route_x[i],  # dx
+                route_y[i + 1] - route_y[i],  # dy
+                head_width=80,
+                head_length=80,
+                fc="#1f77b4",
+                ec="#1f77b4",
+                length_includes_head=True,
+                alpha=0.7,
+            )
+
+        # 高亮起点（北京）：红色大圆点
+        origin_x, origin_y = self.coordinates[self.origin_index]
+        plt.scatter(
+            origin_x,
+            origin_y,
+            c="red",
+            s=180,
+            marker="o",
+            edgecolors="darkred",
+            label="起点(北京)",
+            zorder=5,
+        )
+
+        # 标注城市名称（只标注路径上的城市）
+        for i in route:
+            cx, cy = self.coordinates[i]
+            city_name = self.cities[i]
+            plt.annotate(
+                city_name,
+                (cx, cy),
+                fontsize=9,
+                ha="right",
+                color="black",
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.7),
+            )
+
+        # 图表标题与标签
+        plt.title(
+            f"模拟退火TSP最优路径\n总距离：{best_dist:.2f} | 城市数：{self.num_cities}",
+            fontsize=14,
+            pad=20,
+        )
+        plt.xlabel("X 坐标", fontsize=12)
+        plt.ylabel("Y 坐标", fontsize=12)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc="best")
+        plt.tight_layout()
+        plt.show()
 
 
 # 辅助函数
@@ -205,8 +290,9 @@ def pad_string(s, total_width):
 
 
 if __name__ == "__main__":
-    key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
+    # key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
     # 设置随机数种子，确保结果可复现
+    key = "n"
     random.seed(42) if key == "y" else None
 
     # 导入csv文件，获取城市列表和坐标
@@ -245,4 +331,5 @@ if __name__ == "__main__":
     print("最短访问路径:")
     sa_tsp.print_route(best_route)
     print(f"最短距离: {best_dist:.2f}")
+    sa_tsp.plot_route(best_route, best_dist)  # 可视化最短路径
     print(f"运行时间: {time.time() - start_time:.2f}秒")
