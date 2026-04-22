@@ -1,0 +1,13 @@
+* text=auto
+*.py text
+*.csv text
+*.md text
+*.json text
+*.txt text
+
+# 二进制文件不转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
