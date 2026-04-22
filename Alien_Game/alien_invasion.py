@@ -3,6 +3,7 @@ import sys
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
+from alien import Alien
 
 
 # 初始化游戏对象
@@ -30,9 +31,12 @@ class AlienInvasion:
         self.clock = pygame.time.Clock()
         # 创建飞船对象
         self.ship = Ship(self)
-
         # 创建一个用于存储子弹的编组
         self.bullets = pygame.sprite.Group()
+        # 创建一个用于存储外星人的编组
+        self.aliens = pygame.sprite.Group()
+        # 创建外星人群
+        self._creat_fleet()
 
     def _check_events(self):
         # 监听并处理游戏事件
@@ -67,7 +71,7 @@ class AlienInvasion:
             self.ship.moving_up = True  # 开启上移
         elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
             self.ship.moving_down = True  # 开启下移
-        elif event.key == pygame.K_q:
+        elif event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
             sys.exit()  # 按下Q键，退出游戏
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()  # 按下空格键，发射子弹
@@ -78,6 +82,7 @@ class AlienInvasion:
         self.ship.blitme()  # 将飞船绘制到屏幕上
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()  # 绘制所有子弹
+        self.aliens.draw(self.screen)  # 绘制所有外星人
         pygame.display.flip()  # 刷新显示整个屏幕
 
     def run_game(self):
@@ -97,13 +102,31 @@ class AlienInvasion:
 
     def _fire_bullet(self):
         # 创建一个新子弹并将其加入到编组bullets中
-        if len(self.bullets) < self.settings.bullets_allowed:  # 限制子弹数量不超过设置值
+        if (
+            len(self.bullets) < self.settings.bullets_allowed
+        ):  # 限制子弹数量不超过设置值
             bullet = Bullet(self)  # 创建一个子弹对象
             self.bullets.add(bullet)  # 将子弹对象加入编组
 
     def _update_bullets(self):
         # 更新子弹位置并删除已消失的子弹
         self.bullets.update()  # 更新子弹位置
+
+    def _creat_fleet(self):
+        # 创建外星人群
+        alien = Alien(self)  # 创建一个外星人对象
+        alien_width, alien_height = alien.rect.size  # 获取外星人尺寸
+
+        current_x, current_y = alien_width, alien_height  # 设置初始位置
+        while current_y < self.settings.screen_height - 3 * alien_height:  # 循环创建行
+            while (
+                current_x < self.settings.screen_width - 2 * alien_width
+            ):  # 循环创建外星人
+                new_alien = Alien(self, current_x, current_y)  # 创建一个外星人对象
+                self.aliens.add(new_alien)  # 将外星人对象加入编组
+                current_x += alien_width * 2  # 更新x坐标，间隔一个外星人宽度
+            current_x = alien_width  # 重置x坐标，开始新行
+            current_y += alien_height * 2  # 更新y坐标，间隔一个外星人高度
 
 
 if __name__ == "__main__":
