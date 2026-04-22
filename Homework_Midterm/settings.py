@@ -1,5 +1,5 @@
 
-class Setting:
+class Settings:
     def __init__(self):
         """
         定义模拟退火算法的超参数

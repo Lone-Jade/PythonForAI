@@ -11,7 +11,7 @@ import numpy as np
 import random
 import time
 import os
-from setting import Setting
+from settings import Settings
 
 # 设置中文显示和负号显示
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # Windows黑体
@@ -44,7 +44,7 @@ class SimulatedAnnealingTSP:
         self.best_dist_list = []  # 记录每次找到更优解时的最优距离
 
         # 模拟退火算法超参数
-        self.settings = Setting()
+        self.settings = Settings()
         self.initial_temp = self.settings.initial_temp  # 初始温度
         self.cooling_rate = self.settings.cooling_rate  # 降温速率（每轮乘以该系数）
         self.num_iter = self.settings.num_iter  # 每个温度下的迭代次数
