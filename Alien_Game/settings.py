@@ -15,3 +15,8 @@ class Settings:
         self.bullet_height = 15
         self.bullet_color = (60, 60, 60)
         self.bullets_allowed = 15  # 同时屏幕上允许的最大子弹数量
+
+        # 舰队设置
+        self.alien_speed = 1.0  # 外星人水平移动速度
+        self.fleet_drop_speed = 10  # 外星人下落速度
+        self.fleet_direction = 1  # fleet_direction为1表示向右移，为-1表示向左移

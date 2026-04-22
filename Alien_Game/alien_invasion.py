@@ -91,9 +91,10 @@ class AlienInvasion:
             # 1. 监听处理游戏事件
             self._check_events()
 
-            # 2. 更新飞船、子弹
+            # 2. 更新飞船、子弹、外星人舰队位置
             self.ship.update()
             self._update_bullets()
+            self._update_fleet()
 
             # 3. 重绘屏幕并刷新显示
             self._update_screen()
@@ -127,6 +128,20 @@ class AlienInvasion:
                 current_x += alien_width * 2  # 更新x坐标，间隔一个外星人宽度
             current_x = alien_width  # 重置x坐标，开始新行
             current_y += alien_height * 2  # 更新y坐标，间隔一个外星人高度
+
+    def _check_fleet_edges(self):
+        # 舰队边缘检测
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                return True
+        return False
+
+    def _update_fleet(self):
+        # 更新舰队位置
+        is_out_of_edge = self._check_fleet_edges()  # 检测舰队是否碰到边缘
+        if is_out_of_edge:
+            self.settings.fleet_direction *= -1  # 碰到边缘，改变舰队移动方向
+        self.aliens.update(is_out_of_edge)  # 更新所有外星人位置
 
 
 if __name__ == "__main__":

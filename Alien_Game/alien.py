@@ -17,3 +17,16 @@ class Alien(Sprite):
         # 外星人初始位置
         self.rect.x = x_pos
         self.rect.y = y_pos
+
+    def update(self, is_move_down=False):
+        # 更新外星人位置
+        if is_move_down:
+            self.rect.y += self.settings.fleet_drop_speed  # 向下移动
+        self.rect.x += self.settings.alien_speed * self.settings.fleet_direction
+    
+    def check_edges(self):
+        # 检查外星人是否碰到屏幕边缘
+        screen_rect = self.screen.get_rect()
+        if self.rect.right >= screen_rect.right or self.rect.left <= 0:
+            return True
+        return False
