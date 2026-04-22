@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 import time
+import os
+from setting import Setting
 
-
+# 设置中文显示和负号显示
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # Windows黑体
 plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
 
@@ -31,18 +33,23 @@ class SimulatedAnnealingTSP:
 
         self.origin = origin  # 起始城市
         self.cities = cities  # 加载城市数据
-        self.coordinates = coordinates  # 加载城市坐标
+        self.coordinates = np.asarray(coordinates, dtype=np.float64)  # 加载城市坐标数据
         self.num_cities = len(self.cities)  # 城市数量
-        self.origin_index = self._get_index(origin) if origin else None  # 起始城市索引
-        self.distances = np.array(
+        self.origin_index = self._get_index(origin)  # 起始城市索引
+        self.distances = (
             self._cal_matrix_distance()
         )  # 城市距离矩阵，并转换为 NumPy 数组以加速计算
 
+        self.current_dist_list = []  # 记录每次迭代的当前距离
+        self.best_dist_list = []  # 记录每次找到更优解时的最优距离
+
         # 模拟退火算法超参数
-        self.initial_temp = 5000.0  # 初始温度
-        self.cooling_rate = 0.997  # 降温速率（每轮乘以该系数）
-        self.num_iter = 100  # 每个温度下的迭代次数
-        self.stop_temp = 1e-10  # 停止温度（低于此值终止）
+        self.settings = Setting()
+        self.initial_temp = self.settings.initial_temp  # 初始温度
+        self.cooling_rate = self.settings.cooling_rate  # 降温速率（每轮乘以该系数）
+        self.num_iter = self.settings.num_iter  # 每个温度下的迭代次数
+        self.stop_temp = self.settings.stop_temp  # 停止温度（低于此值终止）
+        # self.early_stop_patience = (self.settings.early_stop_patience)  # 早停参数，当连续early_stop_patience次迭代都没有提升时，停止训练
 
     def _cal_distance(self, i, j):
         """
@@ -59,13 +66,11 @@ class SimulatedAnnealingTSP:
         计算城市之间的距离矩阵，该矩阵对称，且对角线元素为0
         :return: 城市距离矩阵
         """
-        distances = [
-            [0 for _ in range(self.num_cities)] for _ in range(self.num_cities)
-        ]
-        for i in range(self.num_cities):
-            for j in range(i + 1, self.num_cities):
-                distances[i][j] = distances[j][i] = self._cal_distance(i, j)
-        return distances
+        # 利用广播计算坐标差: shape (N, N, 2)
+        diff = self.coordinates[:, np.newaxis, :] - self.coordinates[np.newaxis, :, :]
+        # 计算欧氏距离: shape (N, N)
+        dist = np.sqrt(np.sum(diff**2, axis=-1))
+        return dist
 
     def _total_distance(self, route):
         """
@@ -73,11 +78,12 @@ class SimulatedAnnealingTSP:
         :param route: list of int, 访问路径
         :return: float, 总距离
         """
-        dist = 0
-        length = len(route)
-        for i in range(length):
-            dist += self.distances[route[i]][route[(i + 1) % length]]
-        return dist
+        route = np.asarray(route)  # 转换为 NumPy 数组以加速计算
+        next_arr = np.roll(route, -1)  # 获取下一个城市的索引，形成闭环
+        total_dist = np.sum(
+            self.distances[route, next_arr]
+        )  # 利用距离矩阵快速计算总距离
+        return total_dist
 
     def _random_route(self):
         """
@@ -141,9 +147,12 @@ class SimulatedAnnealingTSP:
         best_dist = current_dist  # 最优路径距离
 
         temperature = self.initial_temp  # 初始温度
+        no_improve_count = 0  # 记录连续未找到更优解的次数
 
         # 2. 执行模拟退火算法
         while temperature > self.stop_temp:
+            # imporved = False  # 记录是否找到更优解
+
             for _ in range(self.num_iter):
                 # 生成新解
                 new_route = self._neighour_route(current_route)
@@ -163,13 +172,23 @@ class SimulatedAnnealingTSP:
                         best_route = current_route.copy()
                         best_dist = current_dist
 
+                # 记录当前距离和最优距离
+                self.current_dist_list.append(current_dist)
+                self.best_dist_list.append(best_dist)
+
+            # if not imporved:
+            #     no_improve_count += 1
+            # else:
+            #     no_improve_count = 0
+            # # 早停判断
+            # if no_improve_count >= self.early_stop_patience:
+            #     print(
+            #         f"连续{self.early_stop_patience}次迭代未找到更优解，提前停止算法。"
+            #     )
+            #     break
+
             # 降温
             temperature *= self.cooling_rate
-            # 优化：自适应降温
-            # if best_dist < current_dist * 0.95:
-            #     temperature *= 0.998  # 找到更优解：慢降温
-            # else:
-            #     temperature *= 0.99  # 没找到：快降温
 
         return best_route, best_dist
 
@@ -188,25 +207,26 @@ class SimulatedAnnealingTSP:
         print(pad_string(city_end_str, 12))
         print()
 
-    def plot_route(self, route, best_dist):
+    def plot_route(self, route, best_dist, save_path="."):
         """
         可视化TSP最优路径：带城市名称、方向箭头、起点高亮
         :param route: 最优路径索引列表
         :param best_dist: 最短总距离
         """
+        plt.close("all")  # 关闭之前的图像，避免跳出两张图像
         plt.figure(figsize=(12, 9), dpi=100)
 
         # 获取所有城市坐标
         x = [self.coordinates[i][0] for i in range(self.num_cities)]
         y = [self.coordinates[i][1] for i in range(self.num_cities)]
 
-        # 绘制所有城市点（灰色）
-        plt.scatter(x, y, c="lightgray", s=60, alpha=0.7, label="所有城市")
+        # 绘制所有城市点
+        plt.scatter(x, y, c="brown", s=60, alpha=0.7, label="所有城市")
 
-        # 绘制最优路径（蓝色带箭头）
+        # 绘制最优路径
         route_x = [self.coordinates[i][0] for i in route]
         route_y = [self.coordinates[i][1] for i in route]
-        # 闭合回路（回到起点）
+        # 闭合回路
         route_x.append(route_x[0])
         route_y.append(route_y[0])
 
@@ -215,7 +235,7 @@ class SimulatedAnnealingTSP:
             route_x, route_y, c="#1f77b4", linewidth=2.5, alpha=0.8, label="访问路径"
         )
 
-        # 绘制方向箭头（显示行走方向）
+        # 绘制方向箭头
         for i in range(len(route_x) - 1):
             plt.arrow(
                 route_x[i],
@@ -224,13 +244,13 @@ class SimulatedAnnealingTSP:
                 route_y[i + 1] - route_y[i],  # dy
                 head_width=80,
                 head_length=80,
-                fc="#1f77b4",
+                fc="#1f77b4",  # 箭头颜色与路径线一致
                 ec="#1f77b4",
                 length_includes_head=True,
                 alpha=0.7,
             )
 
-        # 高亮起点（北京）：红色大圆点
+        # 高亮起点
         origin_x, origin_y = self.coordinates[self.origin_index]
         plt.scatter(
             origin_x,
@@ -243,7 +263,7 @@ class SimulatedAnnealingTSP:
             zorder=5,
         )
 
-        # 标注城市名称（只标注路径上的城市）
+        # 标注城市名称
         for i in route:
             cx, cy = self.coordinates[i]
             city_name = self.cities[i]
@@ -267,6 +287,49 @@ class SimulatedAnnealingTSP:
         plt.grid(True, alpha=0.3)
         plt.legend(loc="best")
         plt.tight_layout()
+
+        if save_path:
+            os.makedirs(save_path, exist_ok=True)
+            save_path = os.path.join(
+                save_path, f"tsp_best_route_distance_{best_dist:.2f}.png"
+            )
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
+            print(f"最优路径图已保存至: {save_path}")
+        plt.show()
+
+    def plot_dist_curve(self, best_dist, save_path="."):
+        """
+        绘制每次迭代的距离变化曲线
+        """
+        plt.close("all")  # 关闭之前的图像，避免跳出两张图像
+        plt.figure(figsize=(12, 9), dpi=100)
+
+        # 绘图
+        plt.plot(
+            self.current_dist_list,
+            label="当前解距离",
+            color="#ff7f0e",
+            linewidth=1,
+            alpha=0.7,
+        )
+        plt.plot(self.best_dist_list, label="最优解距离", color="#2ca02c", linewidth=2)
+
+        # 样式
+        plt.title("模拟退火算法距离收敛曲线", fontsize=14)
+        plt.xlabel("迭代次数", fontsize=12)
+        plt.ylabel("路径总距离", fontsize=12)
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+
+        if save_path:
+            # 保存图片
+            os.makedirs(save_path, exist_ok=True)
+            save_path = os.path.join(
+                save_path, f"tsp_distance_curve_distance_{best_dist:.2f}.png"
+            )
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
+            print(f"距离曲线图已保存至: {save_path}")
         plt.show()
 
 
@@ -294,6 +357,7 @@ if __name__ == "__main__":
     # 设置随机数种子，确保结果可复现
     key = "n"
     random.seed(42) if key == "y" else None
+    np.random.seed(42) if key == "y" else None
 
     # 导入csv文件，获取城市列表和坐标
     csv_path = "./Homework_Midterm/data.csv"
@@ -313,23 +377,28 @@ if __name__ == "__main__":
             cities.append(city_name)
             coordinates.append((x, y))
 
+    coordinates = np.array(coordinates, dtype=np.float64)  # 转换为 NumPy 数组以加速计算
+
     # 实例化模拟退火算法类
     sa_tsp = SimulatedAnnealingTSP(cities, coordinates, origin="北京")
-    # 执行模拟退火算法，获取最短路径和对应距离
-    best_route, best_dist = sa_tsp.simulated_annealing()
 
     # 测试基本信息
     print(f"城市数量: {sa_tsp.num_cities}")
-    print("城市列表（每行10个）:")
+    print("城市列表:")
     for i, name in enumerate(sa_tsp.cities):
         print(pad_string(name, 10), end="")
         if (i + 1) % 10 == 0:
             print()
     print("\n" + "=" * 60)
 
+    # 执行模拟退火算法，获取最短路径和对应距离
+    best_route, best_dist = sa_tsp.simulated_annealing()
+    print(f"运行时间: {time.time() - start_time:.2f}秒")
+
     # 打印最短路径和对应距离
     print("最短访问路径:")
     sa_tsp.print_route(best_route)
     print(f"最短距离: {best_dist:.2f}")
-    sa_tsp.plot_route(best_route, best_dist)  # 可视化最短路径
-    print(f"运行时间: {time.time() - start_time:.2f}秒")
+
+    #sa_tsp.plot_route(best_route, best_dist)  # 可视化最短路径
+    #sa_tsp.plot_dist_curve(best_dist)  # 绘制距离变化曲线

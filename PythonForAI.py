@@ -287,9 +287,24 @@
 
 # print(sum_)
 
-import math
+# import math
 
-rho = (3 - math.sqrt(5)) / 2
-print(rho, 1 - rho)
-print((1 - rho) / rho, rho / (1 - rho))
-print((1-rho)**2, rho**2)
+# rho = (3 - math.sqrt(5)) / 2
+# print(rho, 1 - rho)
+# print((1 - rho) / rho, rho / (1 - rho))
+# print((1-rho)**2, rho**2)
+
+
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+
+Name = ["张三", "李四", "王五", "赵六", "钱七"]
+Age = [20, 25, 30, 35, 40]
+
+for name, age in zip(Name, Age):
+    person = Person(name, age)
+    print(f"姓名: {person.name}, 年龄: {person.age}")
+    print(id(person))

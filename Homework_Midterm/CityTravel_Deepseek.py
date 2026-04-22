@@ -9,6 +9,10 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 
+# 设置中文显示和负号显示
+plt.rcParams["font.sans-serif"] = ["SimHei"]  # Windows黑体
+plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
+
 
 # 定义城市类
 class City:
@@ -71,7 +75,7 @@ class City:
             # 寻找未访问中距离最近的城市
             next_city = min(
                 (i for i in range(n) if not visited[i]),
-                key=lambda i: self.distances[current][i]
+                key=lambda i: self.distances[current][i],
             )
             route.append(next_city)
             visited[next_city] = True
@@ -95,13 +99,17 @@ class City:
             for i in range(1, n - 1):
                 for j in range(i + 1, n):
                     # 反转 i 到 j 之间的子段
-                    new_route = best_route[:i] + best_route[i:j+1][::-1] + best_route[j+1:]
+                    new_route = (
+                        best_route[:i]
+                        + best_route[i : j + 1][::-1]
+                        + best_route[j + 1 :]
+                    )
                     new_dist = self._total_distance(new_route)
-                    if new_dist < best_dist - 1e-9:   # 有明显改进
+                    if new_dist < best_dist - 1e-9:  # 有明显改进
                         best_route = new_route
                         best_dist = new_dist
                         improved = True
-                        break   # 重置外层循环
+                        break  # 重置外层循环
                 if improved:
                     break
         return best_route, best_dist
@@ -124,7 +132,7 @@ class City:
         :return: (path_names, total_distance)   path_names 为城市名列表（含闭合起点）
         """
         best_route = None
-        best_dist = float('inf')
+        best_dist = float("inf")
 
         # 遍历每个城市作为起点，执行最近邻 + 可选优化
         for start in range(self.num_cities):
@@ -173,27 +181,33 @@ class City:
         :param savefig: 保存图片文件名，若为 None 则不保存
         """
         # 获取路径对应的坐标
-        route_coords = [self.relative_coords[self.cities.index(city)] for city in path_names[:-1]]
+        route_coords = [
+            self.relative_coords[self.cities.index(city)] for city in path_names[:-1]
+        ]
         route_coords = np.array(route_coords)
 
         plt.figure(figsize=(12, 8))
         # 绘制所有城市点
         for name, (x, y) in zip(self.cities, self.relative_coords):
-            plt.scatter(x, y, c='blue', s=50)
-            plt.annotate(name, (x, y), fontsize=8, ha='center', va='bottom')
+            plt.scatter(x, y, c="blue", s=50)
+            plt.annotate(name, (x, y), fontsize=8, ha="center", va="bottom")
 
         # 绘制最优路径连线（闭合）
-        plt.plot(route_coords[:, 0], route_coords[:, 1], 'r-', linewidth=1.5, alpha=0.7)
+        plt.plot(route_coords[:, 0], route_coords[:, 1], "r-", linewidth=1.5, alpha=0.7)
         # 标记起点（绿色五角星）
         start_name = path_names[0]
         start_x, start_y = self.relative_coords[self.cities.index(start_name)]
-        plt.scatter(start_x, start_y, c='green', s=100, marker='*', edgecolors='black', zorder=5)
+        plt.scatter(
+            start_x, start_y, c="green", s=100, marker="*", edgecolors="black", zorder=5
+        )
 
-        total_dist = self._total_distance([self.cities.index(c) for c in path_names[:-1]])
+        total_dist = self._total_distance(
+            [self.cities.index(c) for c in path_names[:-1]]
+        )
         plt.title(f"TSP 最优路径（总距离: {total_dist:.2f}）", fontsize=14)
         plt.xlabel("X 坐标")
         plt.ylabel("Y 坐标")
-        plt.grid(True, linestyle='--', alpha=0.5)
+        plt.grid(True, linestyle="--", alpha=0.5)
         plt.tight_layout()
         if savefig:
             plt.savefig(savefig, dpi=150)
@@ -210,6 +224,7 @@ def get_display_width(s):
         else:
             width += 1
     return width
+
 
 def pad_string(s, total_width):
     """按显示宽度填充空格，用于对齐打印"""
@@ -230,11 +245,13 @@ if __name__ == "__main__":
         print(pad_string(name, 10), end="")
         if (i + 1) % 10 == 0:
             print()
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
 
     # 获取优化后的最短路径（自动多起点+2-opt）
     print("正在搜索最优路径（多起点最近邻 + 2-opt优化）...")
-    path_names, min_distance = city.get_shortest_path(optimize=True, rotate_to_origin=True)
+    path_names, min_distance = city.get_shortest_path(
+        optimize=True, rotate_to_origin=True
+    )
 
     # 打印结果
     print("最优路径（城市名）:")
@@ -242,4 +259,4 @@ if __name__ == "__main__":
     print(f"最短总距离: {min_distance:.2f}")
 
     # 可视化
-    # city.plot_path(path_names, savefig="optimal_tsp_route.png")
+    city.plot_path(path_names, savefig="optimal_tsp_route.png")
