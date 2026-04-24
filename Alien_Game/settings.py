@@ -8,6 +8,7 @@ class Settings:
 
         # 飞船设置
         self.ship_speed = 4.5
+        self.ship_limit = 3  # 飞船的生命值
         
         # 子弹设置
         self.bullet_speed = 3.0

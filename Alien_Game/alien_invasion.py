@@ -1,10 +1,11 @@
 import pygame
 import sys
+import time
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
-
+from game_stats import GameStats
 
 # 初始化游戏对象
 class AlienInvasion:
@@ -37,6 +38,11 @@ class AlienInvasion:
         self.aliens = pygame.sprite.Group()
         # 创建外星人群
         self._creat_fleet()
+        # 创建游戏统计对象
+        self.stats = GameStats(self)
+
+        # 设置游戏活动状态标志
+        self.game_active = True  
 
     def _check_events(self):
         # 监听并处理游戏事件
@@ -92,9 +98,10 @@ class AlienInvasion:
             self._check_events()
 
             # 2. 更新飞船、子弹、外星人舰队位置
-            self.ship.update()
-            self._update_bullets()
-            self._update_fleet()
+            if self.game_active:  # 只有在游戏活动状态下才更新游戏对象
+                self.ship.update()
+                self._update_bullets()
+                self._update_fleet()
 
             # 3. 重绘屏幕并刷新显示
             self._update_screen()
@@ -112,6 +119,7 @@ class AlienInvasion:
     def _update_bullets(self):
         # 更新子弹位置并删除已消失的子弹
         self.bullets.update()  # 更新子弹位置
+        self._check_bullet_alien_collisions()  # 检测子弹和外星人碰撞
 
     def _creat_fleet(self):
         # 创建外星人群
@@ -143,6 +151,42 @@ class AlienInvasion:
             self.settings.fleet_direction *= -1  # 碰到边缘，改变舰队移动方向
         self.aliens.update(is_out_of_edge)  # 更新所有外星人位置
 
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            print("Ship hit!!!")
+            self._reset_game()  # 检测飞船与外星人碰撞
+
+        self._check_aliens_bottom()  # 检测外星人是否到达屏幕底部
+
+    def _check_aliens_bottom(self):
+        # 检测外星人是否到达屏幕底部
+        
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= self.settings.screen_height:
+                print("Aliens get to bottom!!!")
+                self._reset_game()  # 检测飞船与外星人碰撞
+                break    
+
+    def _check_bullet_alien_collisions(self):
+        # 检查子弹组与外星人组的碰撞
+        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        # 如果外星人清空
+        if not self.aliens:
+            self.bullets.empty()  # 删除现有子弹
+            self._creat_fleet()  # 创建一个新的舰队
+
+    def _reset_game(self):
+        # 重置游戏状态
+        self.stats.ships_left -= 1  # 减少飞船数量
+        if self.stats.ships_left > 0:
+            self.bullets.empty()  # 删除现有子弹
+            self.aliens.empty()  # 删除现有外星人
+
+            self._creat_fleet()  # 创建一个新的舰队
+            self.ship.center_ship()  # 将飞船重新放置在屏幕底部\
+
+            time.sleep(0.5)  # 暂停0.5秒，给玩家一个缓冲时间
+        else:
+            self.game_active = False  # 没有剩余飞船，游戏结束
 
 if __name__ == "__main__":
     # 创建游戏实例并运行
