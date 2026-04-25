@@ -6,6 +6,8 @@ from ship import Ship
 from bullet import Bullet
 from alien import Alien
 from game_stats import GameStats
+from button import Button
+
 
 # 初始化游戏对象
 class AlienInvasion:
@@ -42,7 +44,8 @@ class AlienInvasion:
         self.stats = GameStats(self)
 
         # 设置游戏活动状态标志
-        self.game_active = True  
+        self.game_active = False  # 游戏开始时处于非活动状态
+        self.play_button = Button(self, "Play")  # 创建一个Play按钮对象
 
     def _check_events(self):
         # 监听并处理游戏事件
@@ -55,6 +58,10 @@ class AlienInvasion:
 
             elif event.type == pygame.KEYUP:
                 self._check_keyup_events(event)  # 处理按键松开事件
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()  # 获取鼠标点击位置
+                self._check_play_button(mouse_pos)  # 检测Play按钮是否被点击
 
     def _check_keyup_events(self, event):
         # 处理按键松开事件
@@ -82,6 +89,23 @@ class AlienInvasion:
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()  # 按下空格键，发射子弹
 
+    def _check_play_button(self, mouse_pos):
+        # 检测Play按钮是否被点击
+        button_clicked = self.play_button.rect.collidepoint(
+            mouse_pos
+        )  # 检测鼠标点击位置是否在Play按钮范围内
+        if button_clicked and not self.game_active:
+            self.stats.reset_stats()  # 重置游戏统计数据
+            self.game_active = True  # 设置游戏为活动状态
+
+            self.bullets.empty()  # 删除现有子弹
+            self.aliens.empty()  # 删除现有外星人
+
+            self._creat_fleet()  # 创建一个新的舰队
+            self.ship.center_ship()  # 将飞船重新放置在屏幕底部
+
+            pygame.mouse.set_visible(False)  # 隐藏鼠标光标
+
     def _update_screen(self):
         # 重新绘制屏幕
         self.screen.fill(self.settings.bg_color)  # 用背景色填充屏幕
@@ -89,6 +113,10 @@ class AlienInvasion:
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()  # 绘制所有子弹
         self.aliens.draw(self.screen)  # 绘制所有外星人
+
+        if self.game_active == False:
+            self.play_button.draw_button()  # 绘制Play按钮
+
         pygame.display.flip()  # 刷新显示整个屏幕
 
     def run_game(self):
@@ -159,12 +187,12 @@ class AlienInvasion:
 
     def _check_aliens_bottom(self):
         # 检测外星人是否到达屏幕底部
-        
+
         for alien in self.aliens.sprites():
             if alien.rect.bottom >= self.settings.screen_height:
                 print("Aliens get to bottom!!!")
                 self._reset_game()  # 检测飞船与外星人碰撞
-                break    
+                break
 
     def _check_bullet_alien_collisions(self):
         # 检查子弹组与外星人组的碰撞
@@ -187,6 +215,8 @@ class AlienInvasion:
             time.sleep(0.5)  # 暂停0.5秒，给玩家一个缓冲时间
         else:
             self.game_active = False  # 没有剩余飞船，游戏结束
+            pygame.mouse.set_visible(True)  # 显示鼠标光标
+
 
 if __name__ == "__main__":
     # 创建游戏实例并运行
