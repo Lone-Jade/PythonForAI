@@ -27,8 +27,9 @@ class SimulatedAnnealingTSP:
     def __init__(self, cities, coordinates, origin="北京"):
         """
         初始化模拟退火算法解决旅行商问题
-        :param path: 城市坐标数据文件路径
-        :param origin: 起始城市
+        :param cities: 城市名称列表
+        :param coordinates: 城市坐标列表
+        :param origin: 起始城市名称，默认为"北京"
         """
 
         self.origin = origin  # 起始城市
@@ -147,7 +148,6 @@ class SimulatedAnnealingTSP:
         best_dist = current_dist  # 最优路径距离
 
         temperature = self.initial_temp  # 初始温度
-        no_improve_count = 0  # 记录连续未找到更优解的次数
 
         # 2. 执行模拟退火算法
         while temperature > self.stop_temp:
@@ -176,18 +176,7 @@ class SimulatedAnnealingTSP:
                 self.current_dist_list.append(current_dist)
                 self.best_dist_list.append(best_dist)
 
-            # if not imporved:
-            #     no_improve_count += 1
-            # else:
-            #     no_improve_count = 0
-            # # 早停判断
-            # if no_improve_count >= self.early_stop_patience:
-            #     print(
-            #         f"连续{self.early_stop_patience}次迭代未找到更优解，提前停止算法。"
-            #     )
-            #     break
-
-            # 降温
+            # 3. 降温
             temperature *= self.cooling_rate
 
         return best_route, best_dist
@@ -230,12 +219,12 @@ class SimulatedAnnealingTSP:
         route_x.append(route_x[0])
         route_y.append(route_y[0])
 
-        # 画路径线
+        # 画路径线，蓝色，线宽2.5，透明度0.8
         plt.plot(
             route_x, route_y, c="#1f77b4", linewidth=2.5, alpha=0.8, label="访问路径"
         )
 
-        # 绘制方向箭头
+        # 绘制方向箭头，箭头颜色与路径线一致，大小适中，透明度0.7
         for i in range(len(route_x) - 1):
             plt.arrow(
                 route_x[i],
@@ -250,7 +239,7 @@ class SimulatedAnnealingTSP:
                 alpha=0.7,
             )
 
-        # 高亮起点
+        # 高亮起点，使用红色圆点，边缘加深，大小适中，标签为"起点"
         origin_x, origin_y = self.coordinates[self.origin_index]
         plt.scatter(
             origin_x,
@@ -259,11 +248,11 @@ class SimulatedAnnealingTSP:
             s=180,
             marker="o",
             edgecolors="darkred",
-            label="起点(北京)",
+            label="起点",
             zorder=5,
         )
 
-        # 标注城市名称
+        # 标注城市名称，使用黑色字体，背景加白色半透明框，字体大小适中，保持清晰可读
         for i in route:
             cx, cy = self.coordinates[i]
             city_name = self.cities[i]
@@ -276,6 +265,24 @@ class SimulatedAnnealingTSP:
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.7),
             )
 
+        # 设置模拟退火算法的超参数文本
+        param_text = (
+            f"初始温度: {self.initial_temp}\n"
+            f"冷却速率: {self.cooling_rate}\n"
+            f"单温迭代: {self.num_iter}\n"
+            f"停止温度: {self.stop_temp}"
+        )
+        # 在图表左上角添加超参数文本，使用白色半透明背景框，字体大小适中，保持清晰可读
+        plt.text(
+            0.87,
+            0.88,
+            param_text,
+            transform=plt.gca().transAxes,
+            fontsize=11,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.8),
+        )
+
         # 图表标题与标签
         plt.title(
             f"模拟退火TSP最优路径\n总距离：{best_dist:.2f} | 城市数：{self.num_cities}",
@@ -285,7 +292,7 @@ class SimulatedAnnealingTSP:
         plt.xlabel("X 坐标", fontsize=12)
         plt.ylabel("Y 坐标", fontsize=12)
         plt.grid(True, alpha=0.3)
-        plt.legend(loc="best")
+        plt.legend(loc="upper right")
         plt.tight_layout()
 
         if save_path:
@@ -295,16 +302,18 @@ class SimulatedAnnealingTSP:
             )
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
             print(f"最优路径图已保存至: {save_path}")
-        plt.show()
+        # plt.show()
 
     def plot_dist_curve(self, best_dist, save_path="."):
         """
-        绘制每次迭代的距离变化曲线
+        绘制每次迭代的距离变化曲线，即代价函数的收敛情况
+        :param best_dist: 最短总距离，用于保存文件命名
+        :param save_path: 图片保存路径，默认为当前目录
         """
         plt.close("all")  # 关闭之前的图像，避免跳出两张图像
         plt.figure(figsize=(12, 9), dpi=100)
 
-        # 绘图
+        # 绘图，使用橙色线条，线宽1，透明度0.7
         plt.plot(
             self.current_dist_list,
             label="当前解距离",
@@ -314,11 +323,27 @@ class SimulatedAnnealingTSP:
         )
         plt.plot(self.best_dist_list, label="最优解距离", color="#2ca02c", linewidth=2)
 
-        # 样式
+        param_text = (
+            f"初始温度: {self.initial_temp}\n"
+            f"冷却速率: {self.cooling_rate}\n"
+            f"单温迭代: {self.num_iter}\n"
+            f"停止温度: {self.stop_temp}"
+        )
+        plt.text(
+            0.87,
+            0.9,
+            param_text,
+            transform=plt.gca().transAxes,
+            fontsize=11,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.8),
+        )
+
+        # 图表标题与标签
         plt.title("模拟退火算法距离收敛曲线", fontsize=14)
         plt.xlabel("迭代次数", fontsize=12)
         plt.ylabel("路径总距离", fontsize=12)
-        plt.legend()
+        plt.legend(loc = "upper right")
         plt.grid(alpha=0.3)
         plt.tight_layout()
 
@@ -330,7 +355,7 @@ class SimulatedAnnealingTSP:
             )
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
             print(f"距离曲线图已保存至: {save_path}")
-        plt.show()
+        # plt.show()
 
 
 # 辅助函数
@@ -355,7 +380,7 @@ def pad_string(s, total_width):
 if __name__ == "__main__":
     # key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
     # 设置随机数种子，确保结果可复现
-    key = "n"
+    key ='y'
     random.seed(42) if key == "y" else None
     np.random.seed(42) if key == "y" else None
 
@@ -400,5 +425,5 @@ if __name__ == "__main__":
     sa_tsp.print_route(best_route)
     print(f"最短距离: {best_dist:.2f}")
 
-    #sa_tsp.plot_route(best_route, best_dist)  # 可视化最短路径
-    #sa_tsp.plot_dist_curve(best_dist)  # 绘制距离变化曲线
+    sa_tsp.plot_route(best_route, best_dist)  # 可视化最短路径
+    sa_tsp.plot_dist_curve(best_dist)  # 绘制距离变化曲线
