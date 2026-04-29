@@ -343,7 +343,7 @@ class SimulatedAnnealingTSP:
         plt.title("模拟退火算法距离收敛曲线", fontsize=14)
         plt.xlabel("迭代次数", fontsize=12)
         plt.ylabel("路径总距离", fontsize=12)
-        plt.legend(loc = "upper right")
+        plt.legend(loc="upper right")
         plt.grid(alpha=0.3)
         plt.tight_layout()
 
@@ -380,12 +380,12 @@ def pad_string(s, total_width):
 if __name__ == "__main__":
     # key = input("是否需要固定随机数种子以确保结果可复现？(y/n): ").strip().lower()
     # 设置随机数种子，确保结果可复现
-    key ='y'
+    key = "n"
     random.seed(42) if key == "y" else None
     np.random.seed(42) if key == "y" else None
 
     # 导入csv文件，获取城市列表和坐标
-    csv_path = "./Homework_Midterm/data.csv"
+    csv_path = "./data.csv"
     cities = []
     coordinates = []
 
