@@ -7,6 +7,7 @@ from bullet import Bullet
 from alien import Alien
 from game_stats import GameStats
 from button import Button
+from scoreboard import Scoreboard
 
 
 # 初始化游戏对象
@@ -46,6 +47,9 @@ class AlienInvasion:
         # 设置游戏活动状态标志
         self.game_active = False  # 游戏开始时处于非活动状态
         self.play_button = Button(self, "Play")  # 创建一个Play按钮对象
+
+        # 创建得分牌对象
+        self.sb = Scoreboard(self)
 
     def _check_events(self):
         # 监听并处理游戏事件
@@ -104,6 +108,10 @@ class AlienInvasion:
             self._creat_fleet()  # 创建一个新的舰队
             self.ship.center_ship()  # 将飞船重新放置在屏幕底部
 
+            self.settings.initialize_dynamic_settings()  # 初始化动态设置
+
+            self.sb.prep_score()  # 准备显示得分牌
+
             pygame.mouse.set_visible(False)  # 隐藏鼠标光标
 
     def _update_screen(self):
@@ -116,6 +124,8 @@ class AlienInvasion:
 
         if self.game_active == False:
             self.play_button.draw_button()  # 绘制Play按钮
+
+        self.sb.show_score()  # 显示得分牌
 
         pygame.display.flip()  # 刷新显示整个屏幕
 
@@ -180,7 +190,7 @@ class AlienInvasion:
         self.aliens.update(is_out_of_edge)  # 更新所有外星人位置
 
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
-            print("Ship hit!!!")
+            # print("Ship hit!!!")
             self._reset_game()  # 检测飞船与外星人碰撞
 
         self._check_aliens_bottom()  # 检测外星人是否到达屏幕底部
@@ -190,17 +200,23 @@ class AlienInvasion:
 
         for alien in self.aliens.sprites():
             if alien.rect.bottom >= self.settings.screen_height:
-                print("Aliens get to bottom!!!")
+                # print("Aliens get to bottom!!!")
                 self._reset_game()  # 检测飞船与外星人碰撞
                 break
 
     def _check_bullet_alien_collisions(self):
         # 检查子弹组与外星人组的碰撞
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score += self.settings.alien_points * len(aliens)  # 计算得分
+            self.sb.prep_score()  # 准备显示得分牌
         # 如果外星人清空
         if not self.aliens:
             self.bullets.empty()  # 删除现有子弹
             self._creat_fleet()  # 创建一个新的舰队
+            # 增加速度
+            self.settings.increase_speed()
 
     def _reset_game(self):
         # 重置游戏状态
